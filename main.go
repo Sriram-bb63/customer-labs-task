@@ -14,7 +14,7 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var incomingPayload map[string]any
+	var incomingPayload map[string]string
 	json.NewDecoder(r.Body).Decode(&incomingPayload)
 	dispatch(incomingPayload)
 	w.WriteHeader(http.StatusAccepted)
