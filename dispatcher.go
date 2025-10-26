@@ -10,8 +10,8 @@ import (
 )
 
 func dispatch() {
-	log.Println("Dispatcher called")
 	for data := range dataChan {
+		log.Println("Data picked from dataChan: ", data)
 		outputPayload := make(map[string]any)
 
 		outputPayload["event"] = data["ev"]
@@ -52,16 +52,18 @@ func dispatch() {
 				}
 			}
 		}
+		log.Println("Data after processing: ", outputPayload)
 
 		outputPayloadJSON, err := json.Marshal(outputPayload)
 		if err != nil {
-			log.Println("Error marshalling data:", err.Error())
+			log.Println("Error marshalling outputPayload: ", err.Error())
+			return
 		}
 		resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(outputPayloadJSON))
 		if err != nil {
-			log.Println("Error sending request to webhook:", err.Error())
+			log.Println("Error occured while calling webhook: ", err.Error())
+			return
 		}
-		log.Println("Webhook response: ", resp.StatusCode)
 		resp.Body.Close()
 
 		// Webhook response handling placheolder

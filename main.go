@@ -2,31 +2,54 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 )
 
-// The dispatcher function will read from this channel
+const webhookURL = "https://webhook.site/"
+
+// The dispatcher goroutine will read from this channel
 var dataChan chan map[string]string
 
-const webhookURL = "https://webhook.site/your-webhook-endpoint"
-
 func main() {
-	// set up dispatcher func and the channel
-	dataChan = make(chan map[string]string, 100)
-	go dispatch()
+	log.Println("Starting server")
 
-	// Server and router stuff
+	dataChan = make(chan map[string]string, 100)
+	log.Println("Channel created")
+
+	go dispatch()
+	log.Println("Goroutine started")
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /", requestHandler)
-	http.ListenAndServe(":8080", mux)
+	mux.HandleFunc("GET /", getHandler)
+	mux.HandleFunc("POST /", postHandler)
+	log.Println("Server running at http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 
-func requestHandler(w http.ResponseWriter, r *http.Request) {
+func getHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	log.Println("GET request received from ", r.RemoteAddr)
+	w.Write([]byte("Server status - running"))
+	log.Println("GET request handled successfully")
+}
+
+func postHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("POST request received from ", r.RemoteAddr)
 	defer r.Body.Close()
 	var incomingPayload map[string]string
-	json.NewDecoder(r.Body).Decode(&incomingPayload)
+	err := json.NewDecoder(r.Body).Decode(&incomingPayload)
+	if err != nil {
+		log.Println("Error decoding JSON payload: ", err)
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+	if len(dataChan) == cap(dataChan) {
+		log.Println("dataChan is full, dropping the current request")
+		http.Error(w, "Server is busy", http.StatusServiceUnavailable)
+		return
+	}
 	dataChan <- incomingPayload
-	w.WriteHeader(http.StatusAccepted)
-	fmt.Println(incomingPayload)
+	log.Println("Payload sent to dataChan")
+	log.Println("POST request handled successfully")
 }
