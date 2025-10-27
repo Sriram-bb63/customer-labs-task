@@ -7,10 +7,12 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"time"
 )
 
 func dispatch() {
 	for data := range dataChan {
+		startTime := time.Now()
 		log.Println("Data picked from dataChan: ", data)
 		outputPayload := make(map[string]any)
 
@@ -64,9 +66,10 @@ func dispatch() {
 			log.Println("Error occured while calling webhook: ", err.Error())
 			return
 		}
+		log.Println(resp.StatusCode)
 		resp.Body.Close()
-
 		// Webhook response handling placheolder
 
+		log.Println("Dispatcher took: ", time.Since(startTime))
 	}
 }
