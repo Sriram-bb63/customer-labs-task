@@ -14,10 +14,12 @@ var dataChan chan map[string]string
 func main() {
 	log.Println("Starting server")
 
-	dataChan = make(chan map[string]string, 100)
+	dataChan = make(chan map[string]string, 10000)
 	log.Println("Channel created")
 
-	go dispatch()
+	for range 10000 {
+		go dispatch()
+	}
 	log.Println("Goroutine started")
 
 	mux := http.NewServeMux()
